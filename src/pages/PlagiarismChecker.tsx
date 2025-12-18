@@ -1,8 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
-import { Upload, ClipboardPaste, FileText } from "lucide-react";
+import { Upload, ClipboardPaste, FileText, ChevronDown, Check } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useTheme } from "../components/contexts/theme-provider";
+import { ALL_LANGUAGES } from "../constants/languages";
+import { ScrollArea } from "../components/ui/scroll-area";
 
 export default function PlagiarismChecker() {
   const { resolvedTheme } = useTheme();
@@ -11,8 +13,21 @@ export default function PlagiarismChecker() {
   const [inputText, setInputText] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState<{ percentage: number; sources: { url: string; match: number }[] } | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState("English (US)");
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowLanguageDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const wordCount = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
   const maxWords = 25000;
@@ -54,6 +69,29 @@ export default function PlagiarismChecker() {
   return (
     <DashboardLayout title="Plagiarism Checker">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        {/* Top Bar with Language */}
+        <div className={`flex items-center justify-end mb-6 pb-4 border-b ${isDark ? "border-zinc-800" : "border-gray-200"}`}>
+          <div className="relative dropdown-container">
+            <button onClick={() => setShowLanguageDropdown(!showLanguageDropdown)} className={`flex items-center gap-2 text-sm ${isDark ? "text-zinc-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>
+              <span>{selectedLanguage}</span><ChevronDown className={`w-4 h-4 transition-transform ${showLanguageDropdown ? "rotate-180" : ""}`} />
+            </button>
+            {showLanguageDropdown && (
+              <div className={`absolute top-full right-0 mt-2 w-56 rounded-xl border shadow-xl z-50 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
+                <ScrollArea className="h-72" data-lenis-prevent>
+                  <div className="p-1">
+                    {ALL_LANGUAGES.map((lang) => (
+                      <button key={lang} onClick={() => { setSelectedLanguage(lang); setShowLanguageDropdown(false); }} className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between rounded-lg ${selectedLanguage === lang ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>
+                        {lang}
+                        {selectedLanguage === lang && <Check className="w-4 h-4" />}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8">
           <h2 className={`text-2xl md:text-3xl font-bold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}>Plagiarism Checker</h2>

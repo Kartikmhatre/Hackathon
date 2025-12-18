@@ -1,10 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
-import { Upload, ClipboardPaste, ChevronDown, List, AlignLeft } from "lucide-react";
+import { Upload, ClipboardPaste, ChevronDown, List, AlignLeft, Check } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useTheme } from "../components/contexts/theme-provider";
+import { SUMMARIZER_LANGUAGES } from "../constants/languages";
+import { ScrollArea } from "../components/ui/scroll-area";
 
-const languages = ["Language (Auto)", "English", "Spanish", "French", "German", "Italian", "Portuguese"];
 const lengths = ["Short", "Medium", "Long"];
 
 export default function Summarizer() {
@@ -21,6 +22,18 @@ export default function Summarizer() {
   const [showLengthDropdown, setShowLengthDropdown] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowLangDropdown(false);
+        setShowLengthDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handlePaste = async () => {
     const text = await navigator.clipboard.readText();
@@ -67,26 +80,33 @@ export default function Summarizer() {
         {/* Controls */}
         <div className="flex items-center justify-center gap-4 mb-6 flex-wrap">
           {/* Language */}
-          <div className="relative">
+          <div className="relative dropdown-container">
             <button onClick={() => { setShowLangDropdown(!showLangDropdown); setShowLengthDropdown(false); }} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm border ${isDark ? "border-zinc-700 text-zinc-300 hover:bg-zinc-800" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
               {language} <ChevronDown className="w-4 h-4" />
             </button>
             {showLangDropdown && (
-              <div className={`absolute top-full left-0 mt-2 w-48 rounded-lg border shadow-lg z-10 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
-                {languages.map((lang) => (
-                  <button key={lang} onClick={() => { setLanguage(lang); setShowLangDropdown(false); }} className={`w-full text-left px-4 py-2 text-sm ${language === lang ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>{lang}</button>
-                ))}
+              <div className={`absolute top-full left-0 mt-2 w-56 rounded-xl border shadow-xl z-50 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
+                <ScrollArea className="h-72" data-lenis-prevent>
+                  <div className="p-1">
+                    {SUMMARIZER_LANGUAGES.map((lang) => (
+                      <button key={lang} onClick={() => { setLanguage(lang); setShowLangDropdown(false); }} className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between rounded-lg ${language === lang ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>
+                        {lang}
+                        {language === lang && <Check className="w-4 h-4" />}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </div>
 
           {/* Length */}
-          <div className="relative">
+          <div className="relative dropdown-container">
             <button onClick={() => { setShowLengthDropdown(!showLengthDropdown); setShowLangDropdown(false); }} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm border ${isDark ? "border-zinc-700 text-zinc-300 hover:bg-zinc-800" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
               {length} <ChevronDown className="w-4 h-4" />
             </button>
             {showLengthDropdown && (
-              <div className={`absolute top-full left-0 mt-2 w-32 rounded-lg border shadow-lg z-10 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
+              <div className={`absolute top-full left-0 mt-2 w-32 rounded-lg border shadow-lg z-50 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
                 {lengths.map((l) => (
                   <button key={l} onClick={() => { setLength(l); setShowLengthDropdown(false); }} className={`w-full text-left px-4 py-2 text-sm ${length === l ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>{l}</button>
                 ))}

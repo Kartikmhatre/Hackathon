@@ -1,22 +1,38 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
-import { Upload, ClipboardPaste, Info, ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
+import { Upload, ClipboardPaste, Info, ChevronDown, ChevronUp, MessageSquare, Check } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useTheme } from "../components/contexts/theme-provider";
-
-const languages = ["English", "French", "Spanish", "German"];
+import { ALL_LANGUAGES, QUICK_LANGUAGES } from "../constants/languages";
+import { ScrollArea } from "../components/ui/scroll-area";
 
 export default function Dashboard() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const [selectedLanguage, setSelectedLanguage] = useState("English (US)");
   const [inputText, setInputText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<{ aiGenerated: number; humanRefined: number; humanWritten: number } | null>(null);
   const [showUnderstanding, setShowUnderstanding] = useState(false);
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const allButtonRef = useRef<HTMLButtonElement>(null);
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowAllLanguages(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const wordCount = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
   const minWords = 40;
@@ -59,11 +75,46 @@ export default function Dashboard() {
         </div>
 
         {/* Language Tabs */}
-        <div className={`flex items-center gap-1 mb-6 overflow-x-auto pb-2 border-b ${isDark ? "border-zinc-800" : "border-gray-200"}`}>
-          {languages.map((lang) => (
-            <button key={lang} onClick={() => setSelectedLanguage(lang)} className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${selectedLanguage === lang ? (isDark ? "text-white border-b-2 border-white -mb-[2px]" : "text-gray-900 border-b-2 border-gray-900 -mb-[2px]") : (isDark ? "text-zinc-500 hover:text-white" : "text-gray-500 hover:text-gray-900")}`}>{lang}</button>
-          ))}
-          <button className={`px-4 py-2 text-sm font-medium flex items-center gap-1 ${isDark ? "text-zinc-500 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}>All <ChevronDown className="w-4 h-4" /></button>
+        <div className="relative mb-6" ref={tabsContainerRef}>
+          <div className={`flex items-center gap-1 overflow-x-auto pb-2 border-b ${isDark ? "border-zinc-800" : "border-gray-200"}`}>
+            {QUICK_LANGUAGES.map((lang) => (
+              <button key={lang} onClick={() => setSelectedLanguage(lang)} className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${selectedLanguage === lang ? (isDark ? "text-white border-b-2 border-white -mb-[2px]" : "text-gray-900 border-b-2 border-gray-900 -mb-[2px]") : (isDark ? "text-zinc-500 hover:text-white" : "text-gray-500 hover:text-gray-900")}`}>{lang}</button>
+            ))}
+            <div className="dropdown-container">
+              <button 
+                ref={allButtonRef}
+                onClick={() => {
+                  if (allButtonRef.current && tabsContainerRef.current) {
+                    const btnRect = allButtonRef.current.getBoundingClientRect();
+                    const containerRect = tabsContainerRef.current.getBoundingClientRect();
+                    setDropdownPosition(btnRect.left - containerRect.left);
+                  }
+                  setShowAllLanguages(!showAllLanguages);
+                }} 
+                className={`px-4 py-2 text-sm font-medium flex items-center gap-1 ${isDark ? "text-zinc-500 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}
+              >
+                All <ChevronDown className={`w-4 h-4 transition-transform ${showAllLanguages ? "rotate-180" : ""}`} />
+              </button>
+            </div>
+          </div>
+          {/* Dropdown positioned outside the overflow container */}
+          {showAllLanguages && (
+            <div 
+              style={{ left: dropdownPosition }}
+              className={`absolute top-full mt-2 w-56 rounded-xl border shadow-xl z-50 dropdown-container ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}
+            >
+              <ScrollArea className="h-72" data-lenis-prevent>
+                <div className="p-1">
+                  {ALL_LANGUAGES.map((lang) => (
+                    <button key={lang} onClick={() => { setSelectedLanguage(lang); setShowAllLanguages(false); }} className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between rounded-lg ${selectedLanguage === lang ? "text-emerald-400" : (isDark ? "text-zinc-300" : "text-gray-700")} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>
+                      {lang}
+                      {selectedLanguage === lang && <Check className="w-4 h-4" />}
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
         </div>
 
         {/* Main Tool Card */}

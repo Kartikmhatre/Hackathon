@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, ChevronDown, Sparkles, Volume2, Copy, Check } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useTheme } from "../components/contexts/theme-provider";
+import { TRANSLATE_SOURCE_LANGUAGES, TRANSLATE_TARGET_LANGUAGES } from "../constants/languages";
+import { ScrollArea } from "../components/ui/scroll-area";
 
-const languages = ["Auto Detect", "English (US)", "Spanish", "French", "German", "Italian", "Portuguese", "Chinese", "Japanese", "Korean", "Arabic", "Hindi"];
 const formalities = ["Default", "Formal", "Informal"];
 
 export default function Translate() {
@@ -21,6 +22,19 @@ export default function Translate() {
   const [showSourceDropdown, setShowSourceDropdown] = useState(false);
   const [showTargetDropdown, setShowTargetDropdown] = useState(false);
   const [showFormalityDropdown, setShowFormalityDropdown] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowSourceDropdown(false);
+        setShowTargetDropdown(false);
+        setShowFormalityDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleTranslate = async () => {
     if (!inputText.trim() || isTranslating) return;
@@ -50,15 +64,22 @@ export default function Translate() {
         {/* Language Selectors */}
         <div className="flex items-center justify-center gap-4 mb-6">
           {/* Source Language */}
-          <div className="relative">
+          <div className="relative dropdown-container">
             <button onClick={() => { setShowSourceDropdown(!showSourceDropdown); setShowTargetDropdown(false); setShowFormalityDropdown(false); }} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border ${isDark ? "border-zinc-700 text-zinc-300 hover:bg-zinc-800" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
               <Sparkles className="w-4 h-4 text-emerald-400" />{sourceLang} <ChevronDown className="w-4 h-4" />
             </button>
             {showSourceDropdown && (
-              <div className={`absolute top-full left-0 mt-2 w-48 rounded-lg border shadow-lg z-10 max-h-64 overflow-y-auto ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
-                {languages.map((lang) => (
-                  <button key={lang} onClick={() => { setSourceLang(lang); setShowSourceDropdown(false); }} className={`w-full text-left px-4 py-2 text-sm ${sourceLang === lang ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>{lang}</button>
-                ))}
+              <div className={`absolute top-full left-0 mt-2 w-56 rounded-xl border shadow-xl z-50 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
+                <ScrollArea className="h-72" data-lenis-prevent>
+                  <div className="p-1">
+                    {TRANSLATE_SOURCE_LANGUAGES.map((lang) => (
+                      <button key={lang} onClick={() => { setSourceLang(lang); setShowSourceDropdown(false); }} className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between rounded-lg ${sourceLang === lang ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>
+                        {lang}
+                        {sourceLang === lang && <Check className="w-4 h-4" />}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </div>
@@ -68,26 +89,33 @@ export default function Translate() {
           </button>
 
           {/* Target Language */}
-          <div className="relative">
+          <div className="relative dropdown-container">
             <button onClick={() => { setShowTargetDropdown(!showTargetDropdown); setShowSourceDropdown(false); setShowFormalityDropdown(false); }} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border ${isDark ? "border-zinc-700 text-zinc-300 hover:bg-zinc-800" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
               <Sparkles className="w-4 h-4 text-emerald-400" />{targetLang} <ChevronDown className="w-4 h-4" />
             </button>
             {showTargetDropdown && (
-              <div className={`absolute top-full left-0 mt-2 w-48 rounded-lg border shadow-lg z-10 max-h-64 overflow-y-auto ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
-                {languages.filter(l => l !== "Auto Detect").map((lang) => (
-                  <button key={lang} onClick={() => { setTargetLang(lang); setShowTargetDropdown(false); }} className={`w-full text-left px-4 py-2 text-sm ${targetLang === lang ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>{lang}</button>
-                ))}
+              <div className={`absolute top-full left-0 mt-2 w-56 rounded-xl border shadow-xl z-50 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
+                <ScrollArea className="h-72" data-lenis-prevent>
+                  <div className="p-1">
+                    {TRANSLATE_TARGET_LANGUAGES.map((lang) => (
+                      <button key={lang} onClick={() => { setTargetLang(lang); setShowTargetDropdown(false); }} className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between rounded-lg ${targetLang === lang ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>
+                        {lang}
+                        {targetLang === lang && <Check className="w-4 h-4" />}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </div>
 
           {/* Formality */}
-          <div className="relative">
+          <div className="relative dropdown-container">
             <button onClick={() => { setShowFormalityDropdown(!showFormalityDropdown); setShowSourceDropdown(false); setShowTargetDropdown(false); }} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border ${isDark ? "border-zinc-700 text-zinc-300 hover:bg-zinc-800" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
               <Sparkles className="w-4 h-4" />Formality <ChevronDown className="w-4 h-4" />
             </button>
             {showFormalityDropdown && (
-              <div className={`absolute top-full right-0 mt-2 w-32 rounded-lg border shadow-lg z-10 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
+              <div className={`absolute top-full right-0 mt-2 w-32 rounded-lg border shadow-lg z-50 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
                 {formalities.map((f) => (
                   <button key={f} onClick={() => { setFormality(f); setShowFormalityDropdown(false); }} className={`w-full text-left px-4 py-2 text-sm ${formality === f ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>{f}</button>
                 ))}

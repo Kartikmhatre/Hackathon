@@ -1,8 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
-import { Upload, ClipboardPaste, ChevronDown, Bold, Italic, Underline, Link, List, ListOrdered, Undo, Redo, CheckCircle2 } from "lucide-react";
+import { Upload, ClipboardPaste, ChevronDown, Bold, Italic, Underline, Link, List, ListOrdered, Undo, Redo, CheckCircle2, Check, Search } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useTheme } from "../components/contexts/theme-provider";
+import { ALL_LANGUAGES } from "../constants/languages";
+import { ScrollArea } from "../components/ui/scroll-area";
+
+const writingTasks = ["Research Paper", "Business Email", "Business Memo", "Marketing Copy", "Essay", "Blog Post", "Cover Letter", "Resume", "Social Media", "Creative Writing", "Technical Documentation", "Academic Paper"];
 
 export default function GrammarChecker() {
   const { resolvedTheme } = useTheme();
@@ -12,8 +16,30 @@ export default function GrammarChecker() {
   const [isChecking, setIsChecking] = useState(false);
   const [corrections, setCorrections] = useState<{ type: string; count: number }[]>([]);
   const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState("English (US)");
+  const [selectedTask, setSelectedTask] = useState("");
+  const [taskSearch, setTaskSearch] = useState("");
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showTaskDropdown, setShowTaskDropdown] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const languageBtnRef = useRef<HTMLButtonElement>(null);
+  const taskBtnRef = useRef<HTMLButtonElement>(null);
+  
+  const filteredTasks = writingTasks.filter(task => task.toLowerCase().includes(taskSearch.toLowerCase()));
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowLanguageDropdown(false);
+        setShowTaskDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const wordCount = inputText.trim() ? inputText.trim().split(/\s+/).length : 0;
 
@@ -58,12 +84,55 @@ export default function GrammarChecker() {
         <div className={`flex items-center justify-between mb-6 pb-4 border-b ${isDark ? "border-zinc-800" : "border-gray-200"}`}>
           <div className={`text-sm ${isDark ? "text-zinc-400" : "text-gray-600"}`}>Untitled document</div>
           <div className="flex items-center gap-4">
-            <button className={`flex items-center gap-2 text-sm ${isDark ? "text-zinc-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>
-              <span>English (US)</span><ChevronDown className="w-4 h-4" />
-            </button>
-            <button className={`flex items-center gap-2 text-sm ${isDark ? "text-zinc-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>
-              <span>Enter writing task</span><ChevronDown className="w-4 h-4" />
-            </button>
+            {/* Language Dropdown */}
+            <div className="relative dropdown-container">
+              <button ref={languageBtnRef} onClick={() => { setShowLanguageDropdown(!showLanguageDropdown); setShowTaskDropdown(false); }} className={`flex items-center gap-2 text-sm ${isDark ? "text-zinc-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>
+                <span>{selectedLanguage}</span><ChevronDown className={`w-4 h-4 transition-transform ${showLanguageDropdown ? "rotate-180" : ""}`} />
+              </button>
+              {showLanguageDropdown && (
+                <div className={`absolute top-full right-0 mt-2 w-56 rounded-xl border shadow-xl z-50 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
+                  <ScrollArea className="h-72" data-lenis-prevent>
+                    <div className="p-1">
+                      {ALL_LANGUAGES.map((lang) => (
+                        <button key={lang} onClick={() => { setSelectedLanguage(lang); setShowLanguageDropdown(false); }} className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between rounded-lg ${selectedLanguage === lang ? "text-emerald-400" : ""} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>
+                          {lang}
+                          {selectedLanguage === lang && <Check className="w-4 h-4" />}
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+            {/* Writing Task Dropdown */}
+            <div className="relative dropdown-container">
+              <button ref={taskBtnRef} onClick={() => { setShowTaskDropdown(!showTaskDropdown); setShowLanguageDropdown(false); }} className={`flex items-center gap-2 text-sm ${isDark ? "text-zinc-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>
+                <span>{selectedTask || "Enter writing task"}</span><ChevronDown className={`w-4 h-4 transition-transform ${showTaskDropdown ? "rotate-180" : ""}`} />
+              </button>
+              {showTaskDropdown && (
+                <div className={`absolute top-full right-0 mt-2 w-80 rounded-xl border shadow-xl z-50 ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-gray-200"}`}>
+                  <div className="p-4">
+                    <h3 className={`text-base font-semibold mb-3 ${isDark ? "text-white" : "text-gray-900"}`}>Set a task for tailored suggestions</h3>
+                    <div className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 ${isDark ? "border-emerald-500/50 bg-zinc-800" : "border-emerald-500 bg-gray-50"}`}>
+                      <input type="text" value={taskSearch} onChange={(e) => setTaskSearch(e.target.value)} placeholder="What are you working on?" className={`flex-1 text-sm bg-transparent focus:outline-none ${isDark ? "text-white placeholder-zinc-500" : "text-gray-900 placeholder-gray-400"}`} />
+                      <Search className={`w-4 h-4 ${isDark ? "text-zinc-500" : "text-gray-400"}`} />
+                    </div>
+                  </div>
+                  <div className={`border-t ${isDark ? "border-zinc-800" : "border-gray-200"}`}>
+                    <p className={`px-4 py-2 text-xs font-medium ${isDark ? "text-zinc-500" : "text-gray-500"}`}>Suggested</p>
+                    <ScrollArea className="h-56" data-lenis-prevent>
+                      <div className="px-1 pb-2">
+                        {filteredTasks.map((task) => (
+                          <button key={task} onClick={() => { setSelectedTask(task); setShowTaskDropdown(false); setTaskSearch(""); }} className={`w-full text-left px-3 py-2.5 text-sm transition-colors rounded-lg ${selectedTask === task ? "text-emerald-400" : (isDark ? "text-zinc-300" : "text-gray-700")} ${isDark ? "hover:bg-zinc-800" : "hover:bg-gray-100"}`}>
+                            {task}
+                          </button>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import {
   Settings, Bell, X, LogOut, HelpCircle, Monitor, Sun, Moon, Mail,
   RefreshCw, SpellCheck, ScanSearch, Shield, Bot, MessageSquare,
-  ImageIcon, Languages, FileText, Quote, Crown,
+  ImageIcon, Languages, FileText, Quote, Crown, Loader2,
 } from "lucide-react";
 import { useTheme } from "./contexts/theme-provider";
 
@@ -53,6 +53,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -60,9 +61,28 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
   const isDark = resolvedTheme === "dark";
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) { navigate("/login"); return; }
-    setUser(JSON.parse(storedUser));
+    const checkAuth = () => {
+      const storedUser = localStorage.getItem("user");
+      const token = localStorage.getItem("token");
+      
+      if (!storedUser || !token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        navigate("/login", { replace: true });
+        return;
+      }
+      
+      setIsLoading(false);
+    };
+    
+    checkAuth();
   }, [navigate]);
 
   const handleLogout = () => {
@@ -73,7 +93,13 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
   const isActive = (path: string) => location.pathname === path;
 
-  if (!user) return null;
+  if (isLoading || !user) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-[#0a0a0a]" : "bg-gray-50"}`}>
+        <Loader2 className={`w-8 h-8 animate-spin ${isDark ? "text-emerald-400" : "text-emerald-600"}`} />
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen flex ${isDark ? "bg-[#0a0a0a] text-white" : "bg-gray-50 text-gray-900"}`} style={{ fontFamily: "'Outfit', sans-serif" }}>
